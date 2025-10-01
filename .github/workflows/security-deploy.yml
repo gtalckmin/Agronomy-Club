@@ -1,0 +1,138 @@
+name: Security Scan and Deploy
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    name: Security Analysis
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run ESLint Security Rules
+      run: |
+        npm install --save-dev eslint-plugin-security
+        npx eslint . --ext .js,.jsx,.ts,.tsx --config .eslintrc.security.json || true
+
+    - name: Audit dependencies for vulnerabilities
+      run: |
+        npm audit --audit-level high
+        npm audit fix --dry-run
+
+    - name: Run Snyk Security Scan
+      uses: snyk/actions/node@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high
+      continue-on-error: true
+
+    - name: OWASP ZAP Baseline Scan
+      uses: zaproxy/action-baseline@v0.10.0
+      with:
+        target: 'http://localhost:3000'
+        docker_name: 'ghcr.io/zaproxy/zaproxy:stable'
+      continue-on-error: true
+
+    - name: Upload security scan results
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-scan-results
+        path: |
+          report_html.html
+          report_md.md
+          report_json.json
+
+  build-and-test:
+    runs-on: ubuntu-latest
+    needs: security-scan
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run type checking
+      run: npm run type-check
+
+    - name: Run linting
+      run: npm run lint
+
+    - name: Build application
+      run: npm run build
+
+    - name: Run security tests
+      run: |
+        # Test for sensitive data in build
+        if grep -r "api_key\|password\|secret\|token" out/ --exclude-dir=node_modules; then
+          echo "❌ Sensitive data found in build output"
+          exit 1
+        fi
+        echo "✅ No sensitive data found in build"
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [security-scan, build-and-test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build for production
+      run: npm run build
+
+    - name: Setup Google Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        service_account_key: ${{ secrets.GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY }}
+        project_id: ${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}
+
+    - name: Deploy to Google Cloud Storage
+      run: |
+        gsutil -m rsync -r -d ./out gs://${{ secrets.GOOGLE_CLOUD_BUCKET_NAME }}
+        gsutil web set -m index.html -e 404.html gs://${{ secrets.GOOGLE_CLOUD_BUCKET_NAME }}
+
+    - name: Invalidate CDN cache
+      run: |
+        gcloud compute url-maps invalidate-cdn-cache ${{ secrets.CDN_URL_MAP }} \
+          --path "/*" --async
+
+    - name: Security notification
+      if: success()
+      run: |
+        echo "✅ Deployment completed successfully with security validation"

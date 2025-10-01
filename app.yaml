@@ -1,0 +1,28 @@
+runtime: nodejs20
+instance_class: F1
+
+# Free tier optimizations
+automatic_scaling:
+  max_instances: 1
+  min_instances: 0
+  target_cpu_utilization: 0.9
+
+env_variables:
+  NODE_ENV: production
+
+handlers:
+- url: /_next/static
+  static_dir: out/_next/static
+  secure: always
+  expiration: "1y"
+
+- url: /(.*\.(gif|png|jpg|jpeg|svg|css|js|ico|webp))$
+  static_files: out/\1
+  upload: out/.*\.(gif|png|jpg|jpeg|svg|css|js|ico|webp)$
+  secure: always
+  expiration: "1y"
+
+- url: /.*
+  static_files: out/index.html
+  upload: out/index.html
+  secure: always

@@ -1,0 +1,77 @@
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Testing
+/coverage
+
+# Next.js
+/.next/
+/out/
+
+# Production
+/build
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local env files
+.env*.local
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Google Cloud
+.gcloudignore
+
+# Security sensitive files
+*.key
+*.pem
+*.p12
+*.crt
+serviceAccountKey.json
+firebase-adminsdk*.json
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE files
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Backup and temporary files
+*.bak
+*.backup
+*.old
+tmp/
+temp/
+.tmp/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Firebase
+.firebase/
+firebase-debug.log
+ui-debug.log
+
+# Security and audit files
+audit.log
+security-scan-results.json
