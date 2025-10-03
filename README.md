@@ -41,56 +41,58 @@ This website is built with Next.js and designed to be hosted on Google Cloud Pla
 
 ### 🆓 **Free Tier Benefits**
 - **Cloud Storage**: 5 GB free storage per month
-- **Cloud CDN**: 1 TB free egress per month (Americas/EMEA)
+- **Cloudflare**: Free CDN + SSL + WAF for proxied traffic
 - **Firebase Hosting**: 10 GB free hosting + SSL + CDN
 - **App Engine**: 28 instance hours free per day (F1 instances)
 
-### 🎯 **Option 1: Firebase Hosting (Recommended - Completely Free)**
-Firebase Hosting provides free SSL, CDN, and custom domains:
+### �️ **Option 1: Cloud Storage + Cloudflare (Recommended & Free)**
+Use Google Cloud Storage for hosting and Cloudflare for HTTPS, caching, and security at zero cost.
+
+1. **Deploy to the custom domain bucket**:
+   ```bash
+   ./deploy-domain.sh
+   ```
+
+2. **Create a Cloudflare account (free)** at [cloudflare.com](https://dash.cloudflare.com/) and add `agronomyclub.org` as a site.
+
+3. **Update GoDaddy nameservers** to the two Cloudflare nameservers shown during setup. DNS propagation can take up to 24 hours.
+
+4. **Configure Cloudflare DNS**:
+   - `www` → `c.storage.googleapis.com` (CNAME, **Proxied** / orange cloud)
+   - `@` → `www.agronomyclub.org` (CNAME flattening) or enable Page Rule forwarding `@` → `https://www.agronomyclub.org`
+
+5. **Enable SSL & redirects in Cloudflare**:
+   - SSL/TLS mode: **Full**
+   - Edge Certificates: turn on **Always Use HTTPS** and **Automatic HTTPS Rewrites**
+   - Optional: cache everything rule for `/` with edge cache TTL ≥ 1 hour
+
+Once DNS propagates, `https://www.agronomyclub.org` serves via Cloudflare with free HTTPS while GCS stays the origin.
+
+📘 Need the full playbook? See [`docs/cloudflare-setup.md`](docs/cloudflare-setup.md).
+
+### 🔐 **Option 2: Firebase Hosting (Zero-Cost Alternative)**
+Firebase Hosting also includes free SSL and CDN, and may be easier if you prefer not to manage DNS nameservers.
 
 1. **Install Firebase CLI**:
    ```bash
    npm install -g firebase-tools
    ```
 
-2. **Initialize Firebase**:
+2. **Initialize & deploy**:
    ```bash
    firebase login
    firebase init hosting
-   # Select: Use existing project -> agronomy-club
+   # Use existing project -> agronomy-club
    # Public directory: out
-   # Single-page app: No
-   # Set up automatic builds: No
-   ```
-
-3. **Deploy**:
-   ```bash
+   # Configure as SPA: No
    npm run build
    firebase deploy
    ```
 
-### 🏗️ **Option 2: Cloud Storage + Load Balancer (Free Tier)**
-1. **Create bucket with unique name**:
-   ```bash
-   gsutil mb gs://agronomy-club-website-$(date +%s)
-   export BUCKET_NAME=agronomy-club-website-$(date +%s)
-   ```
+### 📱 **Option 3: App Engine Free Tier (Dynamic Needs)**
+If you later require server-side features, App Engine F1 instances are free for light workloads.
 
-2. **Upload files**:
-   ```bash
-   gsutil -m rsync -r -d ./out gs://$BUCKET_NAME
-   ```
-
-3. **Make bucket public**:
-   ```bash
-   gsutil iam ch allUsers:objectViewer gs://$BUCKET_NAME
-   gsutil web set -m index.html -e 404.html gs://$BUCKET_NAME
-   ```
-
-### 📱 **Option 3: App Engine Free Tier**
-App Engine F1 instances are free (28 hours/day):
-
-1. **Update app.yaml for free tier**:
+1. **Confirm `app.yaml` free-tier settings** (already provided):
    ```yaml
    runtime: nodejs20
    instance_class: F1
@@ -105,16 +107,15 @@ App Engine F1 instances are free (28 hours/day):
    ```
 
 ### 🌐 **Custom Domain Setup (Free)**
-After deployment, connect agronomyclub.org:
-- **Firebase**: Use Firebase Console > Hosting > Connect Domain
-- **Cloud Storage**: Set up CNAME in GoDaddy DNS
-- **App Engine**: Use `gcloud app domain-mappings create`
+- **Cloud Storage via Cloudflare (recommended)**: Proxy `www` through Cloudflare for free TLS and caching, forward root to `www` inside Cloudflare.
+- **Firebase Hosting**: Connect the domain in Firebase Console; SSL is automatic.
+- **App Engine**: Use `gcloud app domain-mappings create` (SSL provided at no cost).
 
 ### 💰 **Cost Optimization Tips**
-- Use Firebase Hosting for zero costs
-- Cloud Storage charges only after 5 GB
-- App Engine F1 instances are free for light traffic
-- All options include free SSL certificates
+- Keep static hosting on Cloud Storage (5 GB free) with Cloudflare proxy for HTTPS and caching.
+- Firebase Hosting remains free for small usage.
+- App Engine F1 covers most low-traffic needs without charges.
+- Monitor usage in Google Cloud console to stay within free tiers.
 
 ### 🚀 **Quick Deploy Scripts**
 

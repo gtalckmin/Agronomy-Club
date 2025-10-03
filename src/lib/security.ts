@@ -49,6 +49,27 @@ export const securityHeaders = [
   }
 ];
 
+type SecurityToken = {
+  role?: string;
+  chapterId?: string;
+  [key: string]: unknown;
+};
+
+type SecurityUser = {
+  role?: string;
+  chapterId?: string;
+  [key: string]: unknown;
+};
+
+type SecuritySession = {
+  user?: {
+    role?: string;
+    chapterId?: string;
+    [key: string]: unknown;
+  } & Record<string, unknown>;
+  [key: string]: unknown;
+};
+
 // Rate limiting configuration
 export const rateLimitConfig = {
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -77,16 +98,19 @@ export const authConfig = {
     error: '/auth/error',
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }: { token: SecurityToken; user?: SecurityUser }) {
       if (user) {
         token.role = user.role;
         token.chapterId = user.chapterId;
       }
       return token;
     },
-    async session({ session, token }) {
-      session.user.role = token.role;
-      session.user.chapterId = token.chapterId;
+    async session({ session, token }: { session: SecuritySession; token: SecurityToken }) {
+      if (!session.user) {
+        session.user = {};
+      }
+      session.user.role = typeof token.role === 'string' ? token.role : session.user.role;
+      session.user.chapterId = typeof token.chapterId === 'string' ? token.chapterId : session.user.chapterId;
       return session;
     },
   },
@@ -164,7 +188,7 @@ export const apiSecurityConfig = {
   }
 };
 
-export default {
+const securityConfig = {
   securityHeaders,
   rateLimitConfig,
   authConfig,
@@ -172,3 +196,5 @@ export default {
   validationRules,
   apiSecurityConfig,
 };
+
+export default securityConfig;

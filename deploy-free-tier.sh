@@ -24,9 +24,9 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Create unique bucket name
+# Create unique bucket name (ephemeral). For production custom domain use deploy-domain.sh
 BUCKET_NAME="agronomy-club-site-$(date +%s)"
-echo "📦 Bucket: $BUCKET_NAME"
+echo "📦 Ephemeral Bucket (not mapped to custom domain): $BUCKET_NAME"
 
 # Enable required APIs
 echo "🔧 Enabling APIs..."
@@ -64,10 +64,12 @@ echo "   📊 Storage: 5 GB free per month"
 echo "   🌍 Bandwidth: 1 GB free egress to worldwide (except China & Australia)"
 echo "   💵 Estimated monthly cost for small site: $0.00"
 echo ""
-echo "🌐 To connect your custom domain (agronomyclub.org):"
-echo "   1. Go to GoDaddy DNS settings"
-echo "   2. Add CNAME record: www -> c.storage.googleapis.com"
-echo "   3. Add A record for root domain (contact GoDaddy support)"
+echo "🌐 To connect your custom domain (agronomyclub.org) with free HTTPS:"
+echo "   1. Create a free Cloudflare account at https://dash.cloudflare.com"
+echo "   2. Add agronomyclub.org and update GoDaddy nameservers to Cloudflare's"
+echo "   3. In Cloudflare DNS: set CNAME www -> c.storage.googleapis.com (Proxied)"
+echo "   4. In Cloudflare SSL/TLS: mode 'Full', enable 'Always Use HTTPS'"
+echo "   5. Optional: Forward @ to https://www.agronomyclub.org within Cloudflare"
 echo ""
 echo "📋 Bucket name saved in .env.local for future deployments"
 echo "BUCKET_NAME=$BUCKET_NAME" > .env.local
