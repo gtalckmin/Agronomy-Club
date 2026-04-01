@@ -39,6 +39,11 @@ const navigationItems: NavItem[] = [
     description: "Participate in agricultural competitions and challenges",
   },
   {
+    name: "Quizzes",
+    href: "/quizzes",
+    description: "Test your knowledge with interactive quizzes",
+  },
+  {
     name: "Resources",
     href: "/resources",
     description: "Access study materials and educational content",
