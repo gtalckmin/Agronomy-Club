@@ -11,8 +11,9 @@ This website is built with Next.js and designed to be hosted on Google Cloud Pla
 - **Framework**: Next.js 15 with App Router
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
-- **Hosting**: Google Cloud Platform
-- **Domain**: agronomyclub.org (GoDaddy)
+- **Cloud services**: Firebase Authentication, Firestore, Cloud Functions (via Firebase Hosting frameworks backend)
+- **Hosting**: Firebase Hosting with Google-managed SSL and CDN
+- **Domain**: agronomyclub.org (GoDaddy DNS)
 
 ## Getting Started
 
@@ -28,69 +29,81 @@ This website is built with Next.js and designed to be hosted on Google Cloud Pla
 
 3. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+### Configure Firebase authentication
+
+1. In [Firebase Console](https://console.firebase.google.com/), create or select the Agronomy Club project and enable **Authentication → Sign-in method → Email/Password**.
+2. Register a **Web App** to obtain the client config. Copy the keys into `.env.local` using the `NEXT_PUBLIC_FIREBASE_*` entries from `.env.example`.
+   ```bash
+   NEXT_PUBLIC_FIREBASE_API_KEY=""
+   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=""
+   NEXT_PUBLIC_FIREBASE_PROJECT_ID="agronomy-club"
+   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=""
+   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=""
+   NEXT_PUBLIC_FIREBASE_APP_ID=""
+   ```
+3. Enable **Firestore** in native mode. No indexes are required yet; a `users` collection will be created automatically.
+4. Create a **service account** with the *Firebase Admin SDK Administrator* role and download the JSON key. Paste the JSON (escaped as shown in `.env.example`) into `FIREBASE_SERVICE_ACCOUNT_KEY`.
+5. Restart the development server after updating environment variables so the Firebase SDKs pick up the new configuration.
+
 ## Building for Production
 
-1. Build the static export:
+1. Create an optimized production build:
    ```bash
    npm run build
    ```
 
-2. The output will be in the `out` folder, ready for deployment to Google Cloud Storage or App Engine.
+2. (Optional) Run the production server locally for a smoke test:
+   ```bash
+   npm run start
+   ```
 
 ## Deployment to Google Cloud (Free Tier Optimized)
 
 ### 🆓 **Free Tier Benefits**
-- **Cloud Storage**: 5 GB free storage per month
-- **Cloudflare**: Free CDN + SSL + WAF for proxied traffic
-- **Firebase Hosting**: 10 GB free hosting + SSL + CDN
-- **App Engine**: 28 instance hours free per day (F1 instances)
+- **Firebase Hosting**: 10 GB free hosting + managed SSL + CDN
+- **Cloud Functions for Firebase**: Handles Next.js server-side API routes (requires billing to be enabled even if you remain within free tier quotas)
+- **Cloud Storage**: 5 GB free storage per month (for assets/backups)
+- **App Engine**: 28 instance hours free per day (F1 instances) if you later need dynamic compute
 
-### �️ **Option 1: Cloud Storage + Cloudflare (Recommended & Free)**
-Use Google Cloud Storage for hosting and Cloudflare for HTTPS, caching, and security at zero cost.
+### �️ **Option 1: Firebase Hosting (Primary Deployment Path)**
+Firebase Hosting now serves the production site with Google-managed HTTPS and CDN. Because authentication relies on dynamic API routes, the Firebase CLI will automatically provision a lightweight Cloud Functions backend during deployment—no additional manual services are required beyond enabling billing on the Firebase project.
 
-1. **Deploy to the custom domain bucket**:
-   ```bash
-   ./deploy-domain.sh
-   ```
-
-2. **Create a Cloudflare account (free)** at [cloudflare.com](https://dash.cloudflare.com/) and add `agronomyclub.org` as a site.
-
-3. **Update GoDaddy nameservers** to the two Cloudflare nameservers shown during setup. DNS propagation can take up to 24 hours.
-
-4. **Configure Cloudflare DNS**:
-   - `www` → `c.storage.googleapis.com` (CNAME, **Proxied** / orange cloud)
-   - `@` → `www.agronomyclub.org` (CNAME flattening) or enable Page Rule forwarding `@` → `https://www.agronomyclub.org`
-
-5. **Enable SSL & redirects in Cloudflare**:
-   - SSL/TLS mode: **Full**
-   - Edge Certificates: turn on **Always Use HTTPS** and **Automatic HTTPS Rewrites**
-   - Optional: cache everything rule for `/` with edge cache TTL ≥ 1 hour
-
-Once DNS propagates, `https://www.agronomyclub.org` serves via Cloudflare with free HTTPS while GCS stays the origin.
-
-📘 Need the full playbook? See [`docs/cloudflare-setup.md`](docs/cloudflare-setup.md).
-
-### 🔐 **Option 2: Firebase Hosting (Zero-Cost Alternative)**
-Firebase Hosting also includes free SSL and CDN, and may be easier if you prefer not to manage DNS nameservers.
-
-1. **Install Firebase CLI**:
+1. **Install Firebase CLI (once per machine)**:
    ```bash
    npm install -g firebase-tools
+   firebase login
    ```
 
-2. **Initialize & deploy**:
+2. **Enable the web frameworks integration and initialize hosting** (first project setup):
    ```bash
-   firebase login
+   firebase experiments:enable webframeworks
    firebase init hosting
-   # Use existing project -> agronomy-club
-   # Public directory: out
-   # Configure as SPA: No
-   npm run build
-   firebase deploy
+   # Project: agronomy-club
+   # Use a web framework? Yes → Next.js
+   # Public directory: .
+   # Configure as SPA: No (Next.js handles routing)
+   # Set up automatic builds and deploys with GitHub? Optional for now
    ```
+
+3. **Deploy new builds** (the CLI will run `next build` for you):
+   ```bash
+   npm run build
+   firebase deploy --only hosting
+   ```
+
+4. **Connect the custom domain**:
+   - Firebase Console → Hosting → Add custom domain → `www.agronomyclub.org`
+   - Follow verification prompts (TXT record) in GoDaddy or Cloudflare DNS.
+   - Once verified, add the Firebase-provided `A`/`AAAA` records (set Cloudflare proxy to DNS-only during provisioning).
+   - Repeat for the apex domain (`agronomyclub.org`) and enable Firebase’s automatic redirect to `www`.
+
+5. **Optional**: After Firebase certificates are active (usually within 10 minutes), re-enable Cloudflare’s proxy and keep SSL mode set to *Full*.
+
+### � **Option 2: Cloud Storage + Cloudflare (Legacy Flow)**
+If you need a fully static deployment, revert `next.config.js` to `output: 'export'`, remove the dynamic auth API routes, and use the existing `./deploy-domain.sh` pipeline along with the Cloudflare configuration in [`docs/cloudflare-setup.md`](docs/cloudflare-setup.md).
 
 ### 📱 **Option 3: App Engine Free Tier (Dynamic Needs)**
-If you later require server-side features, App Engine F1 instances are free for light workloads.
+If you require additional server-side features, App Engine F1 instances remain free for light workloads.
 
 1. **Confirm `app.yaml` free-tier settings** (already provided):
    ```yaml
@@ -107,87 +120,67 @@ If you later require server-side features, App Engine F1 instances are free for 
    ```
 
 ### 🌐 **Custom Domain Setup (Free)**
-- **Cloud Storage via Cloudflare (recommended)**: Proxy `www` through Cloudflare for free TLS and caching, forward root to `www` inside Cloudflare.
 - **Firebase Hosting**: Connect the domain in Firebase Console; SSL is automatic.
+- **Cloud Storage via Cloudflare**: Proxy `www` through Cloudflare for HTTPS and caching if you follow the legacy static deployment path.
 - **App Engine**: Use `gcloud app domain-mappings create` (SSL provided at no cost).
 
 ### 💰 **Cost Optimization Tips**
-- Keep static hosting on Cloud Storage (5 GB free) with Cloudflare proxy for HTTPS and caching.
-- Firebase Hosting remains free for small usage.
-- App Engine F1 covers most low-traffic needs without charges.
+- Keep static assets on Cloud Storage (5 GB free) with Cloudflare proxy for caching.
+- Firebase Hosting stays free for low-traffic usage.
+- App Engine F1 covers most low-traffic compute without charges.
 - Monitor usage in Google Cloud console to stay within free tiers.
 
 ### 🚀 **Quick Deploy Scripts**
 
-**1. Free Tier Deployment** (requires billing enabled):
+**1. Firebase Hosting Deployment** (requires billing enabled):
 ```bash
-./deploy-free-tier.sh
+firebase experiments:enable webframeworks # only needed once per environment
+firebase deploy --only hosting
 ```
 
 **2. Local Production Server** (test locally):
 ```bash
-./serve-local.sh
+npm run build
+npm run start
 ```
 
 ### 📋 **Current Status & Next Steps**
 
-✅ **Completed**:
-- Website built and optimized
-- Free tier deployment scripts ready
-- Google Cloud project configured
+✅ **Completed (Phase 1 & 2)**:
+- Website built and deployed to Firebase Hosting at **https://agronomy-club.web.app**
+- Firebase-backed authentication flows at `/auth/signin` and `/auth/signup`
+- **Member Portal**: Full member directory at `/members` with user profiles and editing
+- Member API endpoints: `/api/members/list`, `/api/members/[uid]`, `/api/chapters/list`
+- **Firestore security rules deployed** — members can read all profiles, edit only their own
+- Firestore indexes configured for efficient member queries
+- Firebase Hosting configuration (`firebase.json`, `.firebaserc`) checked in
+- Google Cloud project configured with frameworks backend at `us-central1`
+- Dynamic account dashboard with authenticated navigation and sign-out controls
 - Local testing available
 
-⚠️ **Required for Cloud Deployment**:
-1. **Enable Billing**: Go to [Cloud Console Billing](https://console.cloud.google.com/billing)
-2. **Link billing account** to `agronomy-club` project
-3. **Run deployment**: `./deploy-free-tier.sh`
+✨ **Production URLs**:
+- **Main site**: https://agronomy-club.web.app
+- **Member Directory**: https://agronomy-club.web.app/members *(auth required)*
+- **Member Profile Editor**: https://agronomy-club.web.app/members/me *(auth required)*
+
+⏳ **In Progress (Phase 3)**:
+- Quiz-mate service deployment to Cloud Run
+- Custom domain setup: agronomyclub.org → www (awaiting DNS configuration)
 
 💡 **Free Tier Limits**:
 - **Storage**: 5 GB/month free
 - **Bandwidth**: 1 GB/month free egress
-- **Estimated cost**: $0/month for typical small business website
+- **Firestore**: 50K reads, 20K writes, 20K deletes/month free
+- **Estimated cost**: $0/month if within free tier (billing required for SSR backend)
 
-🌐 **Domain Setup** (after deployment):
+🌐 **Domain Setup with Firebase Hosting**
 
-**Current Status**: ✅ Website deployed to: `agronomy-club-site-1759319875.storage.googleapis.com`
+1. **Verify domain**: Firebase Console → Hosting → “Add custom domain” → `www.agronomyclub.org`.
+2. **Point DNS**: Add the Firebase-provided `A` (and optional `AAAA`) records for both `www` and root domains. If using Cloudflare, keep them **DNS only** until the SSL certificate is issued.
+3. **Apex redirect**: Accept Firebase’s automatic redirect from `agronomyclub.org` → `www.agronomyclub.org`.
+4. **Optional Cloudflare proxy**: After the certificate is active, re-enable the orange-cloud proxy for analytics/WAF, keeping SSL on *Full*.
 
-**GoDaddy DNS Changes Required**:
-
-1. **Delete** the current A record:
-   - Type: `A`
-   - Name: `@` 
-   - Data: `WebsiteBuilder Site`
-
-2. **Edit** the existing CNAME record:
-   - Type: `CNAME`
-   - Name: `www`
-   - **Change Data from**: `agronomyclub.org.`
-   - **Change Data to**: `c.storage.googleapis.com`
-
-3. **For the root domain (@), you have two options**:
-
-   **Option A: Use GoDaddy's Domain Forwarding** (Recommended):
-   - In GoDaddy, set up domain forwarding
-   - Forward `agronomyclub.org` → `www.agronomyclub.org`
-   - This is free and works perfectly with Google Cloud Storage
-
-   **Option B: Use Google Cloud Load Balancer** (Advanced):
-   - Create a load balancer with a static IP
-   - Point A record to that IP
-   - More complex but gives you more control
-
-**After DNS changes**:
-- ✅ `www.agronomyclub.org` → Your Google Cloud website
-- ✅ `agronomyclub.org` → Redirects to www (via A record)
-- ⏱️ DNS propagation: 1-48 hours
-
-## Domain Configuration
-
-The domain agronomyclub.org is registered with GoDaddy. To connect it to Google Cloud:
-
-1. In GoDaddy's DNS management, add CNAME records pointing to your Google Cloud resources
-2. For Cloud Storage: Create a CNAME pointing to `c.storage.googleapis.com`
-3. For App Engine: Use the provided App Engine URL as the CNAME target
+📌 **Current status**: Firebase Hosting is ready; run `firebase deploy --only hosting` after each build to publish updates.
 
 ## Development
 

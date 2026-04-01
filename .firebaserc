@@ -1,5 +1,16 @@
 {
   "projects": {
-    "default": "agronomy-club"
-  }
+    "default": "agronomy-club",
+    "agronomy-club": "agronomy-club"
+  },
+  "targets": {
+    "agronomy-club": {
+      "hosting": {
+        "production": [
+          "agronomy-club"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

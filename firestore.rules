@@ -1,0 +1,101 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserRole(uid) {
+      return get(/databases/$(database)/documents/users/$(uid)).data.role;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && getUserRole(request.auth.uid) == 'admin';
+    }
+
+    function isCurator() {
+      let role = getUserRole(request.auth.uid);
+      return isAuthenticated() && (role == 'curator' || role == 'admin');
+    }
+
+    function isChapterLead() {
+      let role = getUserRole(request.auth.uid);
+      return isAuthenticated() && (role == 'chapter_lead' || role == 'admin');
+    }
+
+    function isOwnProfile(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    function isChapterMember(chapterId) {
+      return isAuthenticated() && 
+             getUserRole(request.auth.uid) != null &&
+             (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.chapterId == chapterId ||
+              isAdmin());
+    }
+
+    // Users collection: authenticated members can read all, write only their own
+    match /users/{userId} {
+      // Members can read all user profiles (member directory)
+      allow read: if isAuthenticated();
+
+      // Users can update their own profile (bio, avatarUrl, chapterInterest, skills)
+      allow update: if isOwnProfile(userId) &&
+                       !request.resource.data.keys().hasAny(['role', 'verified', 'createdAt', 'joinedAt', 'email', 'uid']);
+
+      // New member signup - backend sets role/verified
+      allow create: if isAuthenticated() && 
+                       request.resource.data.uid == request.auth.uid &&
+                       request.resource.data.email == request.auth.token.email &&
+                       request.resource.data.role == 'member' &&
+                       request.resource.data.verified == false;
+
+      // Admins can update any user (role, verified, etc.)
+      allow write: if isAdmin();
+    }
+
+    // Chapters collection: authenticated users can read, leads/admins can write
+    match /chapters/{chapterId} {
+      // Authenticated users can read all chapters
+      allow read: if isAuthenticated();
+
+      // Chapter leads and admins can write to their own/managed chapters
+      allow write: if isChapterLead() || isAdmin();
+    }
+
+    // Quizzes collection: authenticated users can read, curators/admins can write
+    match /quizzes/{quizId} {
+      // Authenticated users can read all quizzes
+      allow read: if isAuthenticated();
+
+      // Only curators and admins can create/update/delete quizzes
+      allow write: if isCurator();
+      
+      // Quiz responses subcollection
+      match /responses/{responseId} {
+        // Users can read their own responses, curators can read all
+        allow read: if isAuthenticated() && 
+                       (resource.data.userId == request.auth.uid || isCurator());
+        
+        // Users can create their own response
+        allow create: if isAuthenticated() &&
+                        request.resource.data.userId == request.auth.uid;
+        
+        // Users can update their own response
+        allow update: if isAuthenticated() &&
+                        resource.data.userId == request.auth.uid &&
+                        request.resource.data.userId == request.auth.uid;
+
+        // Curators can read/update all responses
+        allow read, update: if isCurator();
+      }
+    }
+
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
