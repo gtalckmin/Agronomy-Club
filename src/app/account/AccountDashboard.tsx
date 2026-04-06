@@ -96,14 +96,55 @@ export default function AccountDashboard() {
       </div>
 
       <div className="rounded-xl border border-green-100 bg-white p-6 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900">Next on your Agronomy roadmap</h3>
-        <ul className="mt-4 space-y-3 text-sm text-gray-700">
-          <li>• Confirm your chapter interest so the right advisor can reach out.</li>
-          <li>• Watch for agronomy competitions and field days in the competitions portal.</li>
-          <li>
-            • Join the <Link href="/community" className="text-green-700 hover:text-green-800">community hub</Link> to share crop trial results and best practices.
-          </li>
-        </ul>
+        <h3 className="text-lg font-semibold text-gray-900">Your Membership Launchpad</h3>
+        <p className="mt-2 text-sm text-gray-600">
+          Welcome to the club! Here are the key sections to get you started on your agronomy journey.
+        </p>
+        
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <Link 
+            href="/games"
+            className="flex flex-col items-start rounded-xl border border-green-50 p-4 transition hover:border-green-200 hover:bg-green-50/30"
+          >
+            <span className="text-lg font-semibold text-green-800">🎮 Educational Games</span>
+            <p className="mt-1 text-xs text-gray-600">Master soil science and crop management through interactive play.</p>
+          </Link>
+
+          <Link 
+            href="/quizzes"
+            className="flex flex-col items-start rounded-xl border border-green-50 p-4 transition hover:border-green-200 hover:bg-green-50/30"
+          >
+            <span className="text-lg font-semibold text-green-800">📝 Online Quizzes</span>
+            <p className="mt-1 text-xs text-gray-600">Test your knowledge and earn badges toward your certifications.</p>
+          </Link>
+
+          <Link 
+            href="/community"
+            className="flex flex-col items-start rounded-xl border border-green-50 p-4 transition hover:border-green-200 hover:bg-green-50/30"
+          >
+            <span className="text-lg font-semibold text-green-800">💬 Community Hub</span>
+            <p className="mt-1 text-xs text-gray-600">Connect with other members and share your agronomy insights.</p>
+          </Link>
+
+          <Link 
+            href="/resources"
+            className="flex flex-col items-start rounded-xl border border-green-50 p-4 transition hover:border-green-200 hover:bg-green-50/30"
+          >
+            <span className="text-lg font-semibold text-green-800">📚 Learning Resources</span>
+            <p className="mt-1 text-xs text-gray-600">Access field guides, study materials, and technical agronomy papers.</p>
+          </Link>
+        </div>
+
+        <div className="mt-8 border-t border-green-50 pt-6">
+          <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Next Steps</h4>
+          <ul className="mt-4 space-y-3 text-sm text-gray-700">
+            <li>• Confirm your chapter interest so the right advisor can reach out.</li>
+            <li>• Watch for agronomy competitions and field days in the competitions portal.</li>
+            <li>
+              • Participate in <Link href="/community" className="text-green-700 hover:text-green-800 font-medium">community discussions</Link> to share crop trial results.
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   )

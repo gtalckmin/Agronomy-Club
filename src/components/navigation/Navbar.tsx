@@ -24,11 +24,6 @@ const navigationItems: NavItem[] = [
     description: "Join discussions, share posts, and connect with members",
   },
   {
-    name: "Games",
-    href: "/games",
-    description: "Educational games for agricultural learning",
-  },
-  {
     name: "Chapters",
     href: "/chapters",
     description: "Find and connect with university chapters",
@@ -53,10 +48,18 @@ const navigationItems: NavItem[] = [
     href: "/alumni",
     description: "Connect with alumni for mentorship and career opportunities",
   },
+];
+
+const memberNavigationItems: NavItem[] = [
   {
-    name: "Account",
-    href: "/account",
-    description: "Manage your profile and account settings",
+    name: "Games",
+    href: "/games",
+    description: "Educational games for agricultural learning",
+  },
+  {
+    name: "Members",
+    href: "/members",
+    description: "View member directory",
   },
 ];
 
@@ -77,6 +80,9 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
   const { user, status, isAuthenticated, signOut } = useAuth();
+  const visibleNavigationItems = isAuthenticated
+    ? navigationItems
+    : navigationItems.filter((item) => item.href !== "/games");
 
   const isActive = (href: string) => {
     if (href === "/") {
@@ -102,7 +108,7 @@ const Navbar = () => {
           </div>
 
           <div className="hidden md:flex items-center space-x-1">
-            {navigationItems.map((item) => (
+            {visibleNavigationItems.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
@@ -116,21 +122,21 @@ const Navbar = () => {
                 {item.name}
               </Link>
             ))}
-            {isAuthenticated && (
-              <>
+            {isAuthenticated &&
+              memberNavigationItems.map((item) => (
                 <Link
-                  href="/members"
+                  key={item.name}
+                  href={item.href}
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-150 ${
-                    isActive("/members")
+                    isActive(item.href)
                       ? "bg-green-700 text-white"
                       : "text-green-100 hover:bg-green-700 hover:text-white"
                   }`}
-                  title="View member directory"
+                  title={item.description}
                 >
-                  Members
+                  {item.name}
                 </Link>
-              </>
-            )}
+              ))}
           </div>
 
           <div className="hidden md:flex items-center space-x-3">
@@ -189,7 +195,7 @@ const Navbar = () => {
       {isOpen && (
         <div className="md:hidden bg-green-700 border-t border-green-600">
           <div className="px-2 pt-2 pb-3 space-y-1">
-            {navigationItems.map((item) => (
+            {visibleNavigationItems.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
@@ -207,6 +213,25 @@ const Navbar = () => {
               </Link>
             ))}
 
+            {isAuthenticated &&
+              memberNavigationItems.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-150 ${
+                    isActive(item.href)
+                      ? "bg-green-600 text-white"
+                      : "text-green-100 hover:bg-green-600 hover:text-white"
+                  }`}
+                  onClick={() => setIsOpen(false)}
+                >
+                  <div className="flex flex-col">
+                    <span>{item.name}</span>
+                    <span className="text-xs text-green-200">{item.description}</span>
+                  </div>
+                </Link>
+              ))}
+
             <div className="mt-3 border-t border-green-600 pt-3 space-y-2">
               {status === "loading" ? (
                 <span className="block px-3 text-sm font-medium text-green-100">Checking session…</span>
@@ -215,13 +240,6 @@ const Navbar = () => {
                   <span className="block px-3 text-sm font-semibold text-green-100">
                     Signed in as {user?.name ?? user?.email ?? "Member"}
                   </span>
-                  <Link
-                    href="/members"
-                    className="block px-3 py-2 rounded-md text-base font-medium text-green-100 transition hover:bg-green-600 hover:text-white"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Member Directory
-                  </Link>
                   <button
                     type="button"
                     onClick={handleSignOut}

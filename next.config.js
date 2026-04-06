@@ -1,9 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  trailingSlash: true,
+  trailingSlash: false,
   images: {
     unoptimized: true
   },
+  // Only mark express as external (provided by Firebase Hosting)
+  // Do NOT use firebase-admin - using Option 1 (Firebase native tokens)
+  serverExternalPackages: [
+    'express',
+  ],
   // Security headers
   async headers() {
     return [

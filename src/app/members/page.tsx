@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useCallback, useState } from 'react'
+import { useCallback, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/auth/AuthProvider'
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { Users } from 'lucide-react'
 
 type Member = {
@@ -17,11 +17,10 @@ type Member = {
   joinedAt?: string
 }
 
-export default function MembersPage() {
-  const { status, isAuthenticated } = useAuth()
-  const router = useRouter()
+function MembersContent() {
+  const { status } = useAuth()
   const [members, setMembers] = useState<Member[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [error, setError] = useState<string | null>(null)
 
@@ -52,14 +51,6 @@ export default function MembersPage() {
     }
   }, [search])
 
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin')
-    } else if (status === 'authenticated') {
-      fetchMembers()
-    }
-  }, [status, router, fetchMembers])
-
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value)
   }
@@ -67,21 +58,6 @@ export default function MembersPage() {
   const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     fetchMembers()
-  }
-
-  if (status === 'loading') {
-    return (
-      <section className="max-w-6xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 w-64 rounded bg-green-100" />
-          <div className="h-60 rounded bg-green-50" />
-        </div>
-      </section>
-    )
-  }
-
-  if (!isAuthenticated) {
-    return null // Redirect happens in useEffect
   }
 
   return (
@@ -157,5 +133,13 @@ export default function MembersPage() {
         </div>
       )}
     </section>
+  )
+}
+
+export default function MembersPage() {
+  return (
+    <ProtectedRoute>
+      <MembersContent />
+    </ProtectedRoute>
   )
 }

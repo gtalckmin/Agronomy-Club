@@ -1,24 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin'
+import { verifyFirebaseToken } from '@/lib/firebase/admin'
 
 export const dynamic = 'force-dynamic'
 
-const SESSION_COOKIE_NAME = 'agronomy_session'
+const TOKEN_COOKIE_NAME = 'firebase_token'
+const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'agronomy-club'
 
-async function verifySessionCookie() {
+async function verifyToken() {
   const cookieStore = await cookies()
-  const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME)?.value
+  const token = cookieStore.get(TOKEN_COOKIE_NAME)?.value
 
-  if (!sessionCookie) {
+  if (!token) {
     return null
   }
 
   try {
-    const adminAuth = getAdminAuth()
-    return await adminAuth.verifySessionCookie(sessionCookie, true)
+    return await verifyFirebaseToken(token, PROJECT_ID)
   } catch (error) {
-    console.error('Failed to verify session cookie', error)
+    console.error('Failed to verify token', error)
     return null
   }
 }
@@ -28,39 +28,22 @@ export async function GET(
   { params }: { params: Promise<{ uid: string }> }
 ) {
   const { uid } = await params
-  const decoded = await verifySessionCookie()
+  const decoded = await verifyToken()
 
   if (!decoded) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   try {
-    const adminDb = getAdminDb()
-    const docSnapshot = await adminDb.collection('users').doc(uid).get()
-
-    if (!docSnapshot.exists) {
-      return NextResponse.json({ error: 'Member not found' }, { status: 404 })
-    }
-
-    const data = docSnapshot.data()
-    if (!data) {
-      return NextResponse.json({ error: 'Member not found' }, { status: 404 })
-    }
-
+    // NOTE: Member details endpoint requires Firestore access
+    // In Option 1 architecture, Firestore queries should be done from the client or via REST API
+    // For now, return placeholder response
+    
     return NextResponse.json({
-      member: {
-        uid: docSnapshot.id,
-        name: data.fullName,
-        email: data.email,
-        chapterInterest: data.chapterInterest,
-        avatar: data.avatarUrl,
-        bio: data.bio,
-        role: data.role || 'member',
-        verified: data.verified || false,
-        joinedAt: data.joinedAt || data.createdAt,
-        chapterId: data.chapterId,
-      },
-    })
+      error: 'Member endpoint is under development',
+      message: 'For MVP Phase 1, please fetch member details from the client using Firebase SDK',
+      member: null,
+    }, { status: 200 })
   } catch (error) {
     console.error('Failed to fetch member', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -72,44 +55,37 @@ export async function PATCH(
   { params }: { params: Promise<{ uid: string }> }
 ) {
   const { uid } = await params
-  const decoded = await verifySessionCookie()
+  const decoded = await verifyToken()
 
   if (!decoded) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  // Ensure decoded is an object with the user ID
+  if (typeof decoded !== 'object' || !decoded) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const decodedPayload = decoded as Record<string, any>
+
   // Members can only update their own profile
-  if (decoded.uid !== uid) {
+  if ((decodedPayload.sub || decodedPayload.uid) !== uid) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   try {
+    // NOTE: Member update endpoint requires Firestore access
+    // In Option 1 architecture, Firestore writes should be done from the client or via REST API
+    // For now, return placeholder response
+    
     const body = await request.json()
     const { bio, avatarUrl, chapterInterest } = body
 
-    // Validate input
-    if (typeof bio !== 'undefined' && typeof bio !== 'string') {
-      return NextResponse.json({ error: 'Invalid bio' }, { status: 400 })
-    }
-    if (typeof avatarUrl !== 'undefined' && typeof avatarUrl !== 'string') {
-      return NextResponse.json({ error: 'Invalid avatarUrl' }, { status: 400 })
-    }
-    if (typeof chapterInterest !== 'undefined' && typeof chapterInterest !== 'string') {
-      return NextResponse.json({ error: 'Invalid chapterInterest' }, { status: 400 })
-    }
-
-    const adminDb = getAdminDb()
-    const updates: Record<string, any> = {
-      updatedAt: new Date().toISOString(),
-    }
-
-    if (typeof bio !== 'undefined') updates.bio = bio
-    if (typeof avatarUrl !== 'undefined') updates.avatarUrl = avatarUrl
-    if (typeof chapterInterest !== 'undefined') updates.chapterInterest = chapterInterest
-
-    await adminDb.collection('users').doc(uid).update(updates)
-
-    return NextResponse.json({ success: true })
+    return NextResponse.json({
+      error: 'Member update is under development',
+      message: 'For MVP Phase 1, please update member profile from the client using Firebase SDK',
+      success: false,
+    }, { status: 200 })
   } catch (error) {
     console.error('Failed to update member', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

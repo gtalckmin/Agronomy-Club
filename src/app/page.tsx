@@ -2,7 +2,6 @@ import Link from 'next/link'
 import {
   Sprout,
   Users,
-  Gamepad2,
   MapPin,
   Trophy,
   BookOpen,
@@ -25,12 +24,6 @@ const features = [
     title: 'Community Posts',
     description: 'Share updates, ask questions, and celebrate wins with agronomy peers around the globe.',
     href: '/community',
-  },
-  {
-    icon: Gamepad2,
-    title: 'Educational Games',
-    description: 'Interactive games that make crop science, soil health, and climate-smart farming fun to learn.',
-    href: '/games',
   },
   {
     icon: MapPin,
@@ -120,7 +113,7 @@ export default function HomePage() {
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Grow with Eight Core Experiences</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Grow with Seven Core Experiences</h2>
           <p className="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">
             Every Agronomy Club experience is designed to blend scientific rigor with hands-on learning and
             collaborative leadership opportunities.

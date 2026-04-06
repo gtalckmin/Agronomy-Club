@@ -1,86 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { Query, DocumentData } from 'firebase-admin/firestore'
-import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin'
+import { verifyFirebaseToken } from '@/lib/firebase/admin'
 
 export const dynamic = 'force-dynamic'
 
-const SESSION_COOKIE_NAME = 'agronomy_session'
+const TOKEN_COOKIE_NAME = 'firebase_token'
+const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'agronomy-club'
 
-async function verifySessionCookie() {
+async function verifyToken() {
   const cookieStore = await cookies()
-  const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME)?.value
+  const token = cookieStore.get(TOKEN_COOKIE_NAME)?.value
 
-  if (!sessionCookie) {
+  if (!token) {
     return null
   }
 
   try {
-    const adminAuth = getAdminAuth()
-    return await adminAuth.verifySessionCookie(sessionCookie, true)
+    return await verifyFirebaseToken(token, PROJECT_ID)
   } catch (error) {
-    console.error('Failed to verify session cookie', error)
+    console.error('Failed to verify token', error)
     return null
   }
 }
 
 export async function GET(request: NextRequest) {
-  const decoded = await verifySessionCookie()
+  const decoded = await verifyToken()
 
   if (!decoded) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   try {
+    // NOTE: Members list endpoint requires Firestore access
+    // In Option 1 architecture, Firestore queries should be done from the client or via REST API
+    // For now, this endpoint returns a placeholder response
+    
     const { searchParams } = new URL(request.url)
     const pageSize = parseInt(searchParams.get('pageSize') ?? '20', 10)
-    const pageToken = searchParams.get('pageToken')
     const chapterId = searchParams.get('chapterId')
-    const search = searchParams.get('search')?.toLowerCase()
-
-    const adminDb = getAdminDb()
-    let query: Query<DocumentData> = adminDb.collection('users')
-
-    // Filter by chapter if provided
-    if (chapterId) {
-      query = query.where('chapterId', '==', chapterId)
-    }
-
-    // Fetch one extra to determine if there are more pages
-    const snapshot = await query.limit(pageSize + 1).get()
-
-    const members = snapshot.docs.slice(0, pageSize).map((doc) => {
-      const data = doc.data()
-      return {
-        uid: doc.id,
-        name: data.fullName || 'Unknown',
-        email: data.email,
-        chapterInterest: data.chapterInterest,
-        avatar: data.avatarUrl,
-        role: data.role || 'member',
-        bio: data.bio,
-        joinedAt: data.joinedAt || data.createdAt,
-      }
-    })
-
-    // Filter by search term (client-side, since Firestore doesn't support full-text search easily)
-    let filtered = members
-    if (search) {
-      filtered = members.filter(
-        (m) =>
-          m.name.toLowerCase().includes(search) ||
-          m.email.toLowerCase().includes(search) ||
-          m.chapterInterest?.toLowerCase().includes(search)
-      )
-    }
-
-    const hasMore = snapshot.docs.length > pageSize
-
+    
+    // TODO: Implement Firestore REST API calls to fetch members
+    // Or use client-side Firebase SDK for member queries
+    
     return NextResponse.json({
-      members: filtered,
-      hasMore,
-      pageToken: hasMore ? snapshot.docs[pageSize]?.id : null,
-    })
+      error: 'Members endpoint is under development',
+      message: 'For MVP Phase 1, please fetch members from the client using Firebase SDK',
+      members: [],
+      hasMore: false,
+      pageToken: null,
+    }, { status: 200 })
   } catch (error) {
     console.error('Failed to fetch members', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

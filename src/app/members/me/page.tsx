@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/auth/AuthProvider'
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { ArrowLeft } from 'lucide-react'
 
 type FormState = {
@@ -18,31 +19,16 @@ type StatusState =
   | { type: 'success'; message: string }
   | { type: 'error'; message: string }
 
-export default function MyProfilePage() {
-  const { status, user, refresh } = useAuth()
+function MyProfileContent() {
+  const { user, refresh } = useAuth()
   const router = useRouter()
 
   const [form, setForm] = useState<FormState>({
-    bio: '',
+    bio: user?.name || '',
     avatarUrl: '',
-    chapterInterest: '',
+    chapterInterest: user?.chapterInterest || '',
   })
   const [statusMsg, setStatusMsg] = useState<StatusState>({ type: 'idle', message: null })
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin')
-    } else if (status === 'authenticated' && user) {
-      // Pre-fill form with existing data
-      setForm((prev) => ({
-        ...prev,
-        bio: user.name || '',
-        chapterInterest: user.chapterInterest || '',
-      }))
-      setLoading(false)
-    }
-  }, [status, user, router])
 
   const handleChange = (field: keyof FormState) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -92,18 +78,8 @@ export default function MyProfilePage() {
     }
   }
 
-  if (status === 'loading' || loading) {
-    return (
-      <section className="max-w-2xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
-        <div className="animate-pulse space-y-4">
-          <div className="h-64 rounded bg-green-100" />
-        </div>
-      </section>
-    )
-  }
-
   if (!user) {
-    return null // Redirect happens in useEffect
+    return null
   }
 
   const isSubmitting = statusMsg.type === 'pending'
@@ -188,5 +164,13 @@ export default function MyProfilePage() {
         </form>
       </div>
     </section>
+  )
+}
+
+export default function MyProfilePage() {
+  return (
+    <ProtectedRoute>
+      <MyProfileContent />
+    </ProtectedRoute>
   )
 }
