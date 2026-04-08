@@ -8,7 +8,9 @@ export const metadata = {
 };
 
 export default function QuizzesPage() {
-  const quizMateUrl = process.env.NEXT_PUBLIC_QUIZ_MATE_URL;
+  const quizMateUrl =
+    process.env.NEXT_PUBLIC_QUIZ_MATE_URL ||
+    "https://quiz-mate-q7uvfi4yhq-uc.a.run.app";
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-white to-green-50 py-12">
@@ -36,21 +38,15 @@ export default function QuizzesPage() {
                 Join live quiz sessions with other members. Answer questions in
                 real-time, get instant feedback, and climb the leaderboard!
               </p>
-              {quizMateUrl ? (
-                <a
-                  href={quizMateUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-green-600 text-white px-8 py-4 rounded-lg hover:bg-green-700 transition font-semibold"
-                >
-                  Open Quiz-Mate
-                  <ArrowRight size={20} />
-                </a>
-              ) : (
-                <div className="text-red-600 font-semibold">
-                  Quiz-Mate URL not configured
-                </div>
-              )}
+              <a
+                href={quizMateUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-green-600 text-white px-8 py-4 rounded-lg hover:bg-green-700 transition font-semibold"
+              >
+                Open Quiz-Mate
+                <ArrowRight size={20} />
+              </a>
             </div>
             <div className="flex-1 text-center">
               <div className="bg-green-100 rounded-lg p-8">
