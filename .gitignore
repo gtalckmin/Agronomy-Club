@@ -76,3 +76,6 @@ ui-debug.log
 # Security and audit files
 audit.log
 security-scan-results.json
+
+# Quiz Mate local TLS material
+quiz-mate/resources/local/

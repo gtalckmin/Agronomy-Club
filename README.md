@@ -6,6 +6,17 @@ Welcome to the official website of the Agronomy Club - agronomyclub.org
 
 This website is built with Next.js and designed to be hosted on Google Cloud Platform. It serves as the digital presence for the Agronomy Club, promoting agricultural science and sustainable farming practices.
 
+## Security Handover
+
+Before handing over this repository to new maintainers, follow the security checklist in [SECURITY-HANDOVER.md](SECURITY-HANDOVER.md).
+
+At minimum:
+
+1. Rotate any credential that may have been exposed in local files or prior commits.
+2. Share git history/branches only, not full workspace zip exports.
+3. Never commit `.env.local` or private key files.
+4. Keep secrets in secure secret managers and CI secret stores.
+
 ## Tech Stack
 
 - **Framework**: Next.js 15 with App Router
